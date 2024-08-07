@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,7 +11,6 @@
       height: 600px; /* Adjust as needed */
       border: none;
     }
-
     iframe {
       position: absolute;
       top: 0;
@@ -23,135 +21,116 @@
     }
   </style>
 </head>
-
-<body>
-
-  <div id="button-container"></div>
-
-  <script>
-    // Function to get query parameters from the URL
-    function getQueryParams() {
+<script>
+  // Function to get query parameters from the URL
+  function getQueryParams() {
       const params = new URLSearchParams(window.location.search);
       return {
         appId: params.get('appId'),
-        configId: params.get('configId'),
-        add_number: params.get('add_number') === 'true'
+        configId: params.get('configId')
       };
     }
 
     // Fetch the parameters
-    const { appId, configId, add_number } = getQueryParams();
+    const { appId, configId } = getQueryParams();
 
     window.fbAsyncInit = function () {
       // JavaScript SDK configuration and setup
       FB.init({
-        appId: appId, // Facebook App ID
-        cookie: true, // enable cookies
-        xfbml: true, // parse social plugins on this page
-        version: 'v20.0' // Graph API version
+        appId:    appId, // Facebook App ID
+        cookie:   true, // enable cookies
+        xfbml:    true, // parse social plugins on this page
+        version:  'v19.0' //Graph API version
       });
     };
-
+  
     // Load the JavaScript SDK asynchronously
     (function (d, s, id) {
       var js, fjs = d.getElementsByTagName(s)[0];
       if (d.getElementById(id)) return;
-      js = d.createElement(s);
-      js.id = id;
+      js = d.createElement(s); js.id = id;
       js.src = "https://connect.facebook.net/en_US/sdk.js";
       fjs.parentNode.insertBefore(js, fjs);
     }(document, 'script', 'facebook-jssdk'));
-
-    // Create buttons based on add_number parameter
-    function createButtons() {
-      const buttonContainer = document.getElementById('button-container');
-
-      if (add_number) {
-        // Create and insert "Add Number" button
-        const addButton = document.createElement('button');
-        addButton.type = 'button';
-        addButton.className = 'btn btn-primary tw-leading-5 tw-flex add-number-button'; // Add any additional classes
-        addButton.setAttribute('data-show-waba-price-add-number-btn', '');
-        addButton.setAttribute('data-test-id', 'add-number-button');
-        addButton.innerHTML = '<i class="icon-ic_add_segment tw-mr-1.5 tw-text-xl tw-h-5"></i> Add Number';
-        addButton.onclick = launchWhatsAppSignup;
-        buttonContainer.appendChild(addButton);
-      } else {
-        // Create and insert "Login with Facebook" button
-        const fbButton = document.createElement('button');
-        fbButton.type = 'button';
-        fbButton.className = 'facebook-button'; // Apply the CSS class for styling
-        fbButton.onclick = launchWhatsAppSignup;
-        fbButton.innerHTML = 'Login with Facebook';
-        buttonContainer.appendChild(fbButton);
-      }
-    }
-
+  
     // Facebook Login with JavaScript SDK
     function launchWhatsAppSignup() {
       // Launch Facebook login
       FB.login(function (response) {
         if (response.authResponse) {
           const code = response.authResponse.code;
-          // The returned code must be transmitted to your backend,
-          // which will perform a server-to-server call from there to our servers for an access token
+          // The returned code must be transmitted to your backend, 
+    // which will perform a server-to-server call from there to our servers for an access token
         } else {
           console.log('User cancelled login or did not fully authorize.');
-          // close the tab if user clicks cancel
+          //close the tab if user click cancel
         }
       }, {
         config_id: configId, // configuration ID goes here
-        response_type: 'code', // must be set to 'code' for System User access token
+        response_type: 'code',    // must be set to 'code' for System User access token
         override_default_response_type: true, // when true, any response types passed in the "response_type" will take precedence over the default type
         extras: {
-          feature: 'whatsapp_embedded_signup',
-          sessionInfoVersion: 2, // Receive Session Logging Info
-          version: 2,
+            feature: 'whatsapp_embedded_signup',
+            sessionInfoVersion: 2,  //  Receive Session Logging Info
+            version: 2,
         }
       });
     }
 
     const sessionInfoListener = (event) => {
-      if (event.origin == null) {
-        return;
+        if (event.origin == null) {
+          return;
       }
 
       // Make sure the data is coming from facebook.com
       if (!event.origin.endsWith("facebook.com")) {
-        return;
+          return;
       }
 
       try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'WA_EMBEDDED_SIGNUP') {
-          // if user finishes the Embedded Signup flow
-          if (data.event === 'FINISH') {
-            const { phone_number_id, waba_id } = data.data;
-            // Forward the data to the parent window
-            window.parent.postMessage(data.data, '*');
-            // tab close
-            console.log("Phone number ID ", phone_number_id, " WhatsApp business account ID ", waba_id);
+          const data = JSON.parse(event.data);
+          if (data.type === 'WA_EMBEDDED_SIGNUP') {
+              // if user finishes the Embedded Signup flow
+              if (data.event === 'FINISH') {
+                  const { phone_number_id, waba_id } = data.data;
+                   // Forward the data to the parent window
+                    window.parent.postMessage(data.data, '*');
+                    //tab close
+                  console.log("Phone number ID ", phone_number_id, " WhatsApp business account ID ", waba_id);
+              }
+              // if user reports an error during the Embedded Signup flow
+              else if (data.event === 'ERROR') {
+                  const { error_message } = data.data;
+                  console.error("error ", error_message);
+              }
+              // if user cancels the Embedded Signup flow
+              else {
+                  const { current_step } = data.data;
+                  // Forward the data to the parent window
+                  window.parent.postMessage(data.data, '*');
+                  console.warn("Cancel at ", current_step);
+              }
           }
-          // if user reports an error during the Embedded Signup flow
-          else if (data.event === 'ERROR') {
-            const { error_message } = data.data;
-            console.error("error ", error_message);
-          }
-          // if user cancels the Embedded Signup flow
-          else {
-            const { current_step } = data.data;
-            // Forward the data to the parent window
-            window.parent.postMessage(data.data, '*');
-            console.warn("Cancel at ", current_step);
-          }
-        }
       } catch {
-        // Don’t parse info that’s not JSON
-        console.log('Non JSON Response', event.data);
+          // Don't parse info that's not a JSON
+          console.log('Non JSON Response', event.data);
       }
     };
-    window.addEventListener('message', sessionInfoListener);
-  </script>
-</body>
+    window.addEventListener('message', sessionInfoListener);  
 
+  </script>
+<body>
+<button onclick="launchWhatsAppSignup()" style="background-color: #1877f2; border: 0; border-radius: 4px; color: #fff; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 16px; font-weight: bold; height: 40px; padding: 0 24px;">Login with Facebook</button>
+<!-- Inline JavaScript event handler -->
+<button
+  type="button"
+  class="btn btn-primary tw-leading-5 tw-flex"
+  data-show-waba-price-add-number-btn
+  onclick="launchWhatsAppSignup()"
+  data-test-id="add-number-button"
+>
+  <i class="icon-ic_add_segment tw-mr-1.5 tw-text-xl tw-h-5"></i>
+  Add Number <!-- Replace this with the actual text if needed -->
+</button>
+</body>
 </html>
