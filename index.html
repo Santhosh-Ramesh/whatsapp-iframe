@@ -5,45 +5,64 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Embed Ember Component</title>
   <style>
-    .iframe-container {
-      position: relative;
-      width: 100%;
-      height: 600px; /* Adjust as needed */
-      border: none;
+    .button-container {
+      margin: 20px;
     }
-    iframe {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      border: none;
+    .button {
+      background-color: #264966;
+      border: 0;
+      border-radius: 4px;
+      color: #fff;
+      cursor: pointer;
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      font-weight: bold;
+      height: 40px;
+      padding: 0 24px;
+      border: 1px solid #12344d;
+      max-width: 240px;
+      min-width: 75px;
+      overflow-x: hidden;
+      overflow-y: hidden;
+      text-overflow: ellipsis;
+      transition: none;
+      text-shadow: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .button svg {
+      margin-right: 8px;
     }
   </style>
 </head>
-<script>
-  // Function to get query parameters from the URL
-  function getQueryParams() {
+<body>
+  <div class="button-container" id="buttonContainer"></div>
+
+  <script>
+    // Function to get query parameters from the URL
+    function getQueryParams() {
       const params = new URLSearchParams(window.location.search);
       return {
         appId: params.get('appId'),
-        configId: params.get('configId')
+        configId: params.get('configId'),
+        addNumber: params.get('add_number')
       };
     }
 
     // Fetch the parameters
-    const { appId, configId } = getQueryParams();
+    const { appId, configId, addNumber } = getQueryParams();
 
     window.fbAsyncInit = function () {
       // JavaScript SDK configuration and setup
       FB.init({
-        appId:    appId, // Facebook App ID
-        cookie:   true, // enable cookies
-        xfbml:    true, // parse social plugins on this page
-        version:  'v19.0' //Graph API version
+        appId: appId, // Facebook App ID
+        cookie: true, // enable cookies
+        xfbml: true, // parse social plugins on this page
+        version: 'v19.0' // Graph API version
       });
     };
-  
+
     // Load the JavaScript SDK asynchronously
     (function (d, s, id) {
       var js, fjs = d.getElementsByTagName(s)[0];
@@ -52,7 +71,7 @@
       js.src = "https://connect.facebook.net/en_US/sdk.js";
       fjs.parentNode.insertBefore(js, fjs);
     }(document, 'script', 'facebook-jssdk'));
-  
+
     // Facebook Login with JavaScript SDK
     function launchWhatsAppSignup() {
       // Launch Facebook login
@@ -60,67 +79,94 @@
         if (response.authResponse) {
           const code = response.authResponse.code;
           // The returned code must be transmitted to your backend, 
-    // which will perform a server-to-server call from there to our servers for an access token
+          // which will perform a server-to-server call from there to our servers for an access token
         } else {
           console.log('User cancelled login or did not fully authorize.');
-          //close the tab if user click cancel
+          // Close the tab if user clicks cancel
         }
       }, {
         config_id: configId, // configuration ID goes here
-        response_type: 'code',    // must be set to 'code' for System User access token
+        response_type: 'code', // must be set to 'code' for System User access token
         override_default_response_type: true, // when true, any response types passed in the "response_type" will take precedence over the default type
         extras: {
-            feature: 'whatsapp_embedded_signup',
-            sessionInfoVersion: 2,  //  Receive Session Logging Info
-            version: 2,
+          feature: 'whatsapp_embedded_signup',
+          sessionInfoVersion: 2, // Receive Session Logging Info
+          version: 2
         }
       });
     }
 
     const sessionInfoListener = (event) => {
-        if (event.origin == null) {
-          return;
+      if (event.origin == null) {
+        return;
       }
 
       // Make sure the data is coming from facebook.com
       if (!event.origin.endsWith("facebook.com")) {
-          return;
+        return;
       }
 
       try {
-          const data = JSON.parse(event.data);
-          if (data.type === 'WA_EMBEDDED_SIGNUP') {
-              // if user finishes the Embedded Signup flow
-              if (data.event === 'FINISH') {
-                  const { phone_number_id, waba_id } = data.data;
-                   // Forward the data to the parent window
-                    window.parent.postMessage(data.data, '*');
-                    //tab close
-                  console.log("Phone number ID ", phone_number_id, " WhatsApp business account ID ", waba_id);
-              }
-              // if user reports an error during the Embedded Signup flow
-              else if (data.event === 'ERROR') {
-                  const { error_message } = data.data;
-                  console.error("error ", error_message);
-              }
-              // if user cancels the Embedded Signup flow
-              else {
-                  const { current_step } = data.data;
-                  // Forward the data to the parent window
-                  window.parent.postMessage(data.data, '*');
-                  console.warn("Cancel at ", current_step);
-              }
+        const data = JSON.parse(event.data);
+        if (data.type === 'WA_EMBEDDED_SIGNUP') {
+          // if user finishes the Embedded Signup flow
+          if (data.event === 'FINISH') {
+            const { phone_number_id, waba_id } = data.data;
+            // Forward the data to the parent window
+            window.parent.postMessage(data.data, '*');
+            console.log("Phone number ID ", phone_number_id, " WhatsApp business account ID ", waba_id);
           }
+          // if user reports an error during the Embedded Signup flow
+          else if (data.event === 'ERROR') {
+            const { error_message } = data.data;
+            console.error("error ", error_message);
+          }
+          // if user cancels the Embedded Signup flow
+          else {
+            const { current_step } = data.data;
+            // Forward the data to the parent window
+            window.parent.postMessage(data.data, '*');
+            console.warn("Cancel at ", current_step);
+          }
+        }
       } catch {
-          // Don't parse info that's not a JSON
-          console.log('Non JSON Response', event.data);
+        // Don't parse info that's not JSON
+        console.log('Non JSON Response', event.data);
       }
     };
-    window.addEventListener('message', sessionInfoListener);  
 
+    window.addEventListener('message', sessionInfoListener);
+
+    // Render buttons based on query parameter
+    function renderButtons() {
+      const container = document.getElementById('buttonContainer');
+
+      let buttonHtml = '';
+      if (addNumber) {
+        buttonHtml = `
+          <button onclick="launchWhatsAppSignup()" class="button">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Add number
+          </button>
+        `;
+      } else {
+        buttonHtml = `
+          <button onclick="launchWhatsAppSignup()" class="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter">
+              <path d="M5 12h14m-7-7l7 7-7 7"/>
+            </svg>
+            Start setup
+          </button>
+        `;
+      }
+
+      container.innerHTML = buttonHtml;
+    }
+
+    // Call the function to render buttons on page load
+    window.onload = renderButtons;
   </script>
-<body>
-<button onclick="launchWhatsAppSignup()" style="background-color: #1877f2; border: 0; border-radius: 4px; color: #fff; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 16px; font-weight: bold; height: 40px; padding: 0 24px;">Login with Facebook</button>
-<!-- Inline JavaScript event handler -->
 </body>
 </html>
