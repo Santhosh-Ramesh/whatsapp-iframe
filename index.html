@@ -5,35 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Embed Ember Component</title>
   <style>
-    .button-container {
-      margin: 20px;
-    }
-    .button {
+    .start_setup,
+    .add_number {
+      width: 120px;
+      height: 40px;
       background-color: #264966;
-      border: 0;
+      border: 1px solid #12344d;
       border-radius: 4px;
       color: #fff;
       cursor: pointer;
-      font-family: Helvetica, Arial, sans-serif;
-      font-size: 16px;
-      font-weight: bold;
-      height: 40px;
-      padding: 0 24px;
-      border: 1px solid #12344d;
+      font-size: 14px;
+      font-weight: 600;
       max-width: 240px;
       min-width: 75px;
       overflow-x: hidden;
       overflow-y: hidden;
       text-overflow: ellipsis;
-      transition: none;
       text-shadow: none;
       display: flex;
       align-items: center;
-      justify-content: center;
+      gap: 6px;
+      line-height: 20px;
+      text-align: left;
     }
-    .button svg {
-      margin-right: 8px;
+
+    .add_number {
+      width: 126px;
     }
+
+    .start_setup:hover,
+    .add_number:hover {
+      background: #12344D;
+    }
+
+    /* Removed unused CSS */
   </style>
 </head>
 <body>
@@ -57,8 +62,8 @@
       // JavaScript SDK configuration and setup
       FB.init({
         appId: appId, // Facebook App ID
-        cookie: true, // enable cookies
-        xfbml: true, // parse social plugins on this page
+        cookie: true, // Enable cookies
+        xfbml: true, // Parse social plugins on this page
         version: 'v19.0' // Graph API version
       });
     };
@@ -67,7 +72,8 @@
     (function (d, s, id) {
       var js, fjs = d.getElementsByTagName(s)[0];
       if (d.getElementById(id)) return;
-      js = d.createElement(s); js.id = id;
+      js = d.createElement(s);
+      js.id = id;
       js.src = "https://connect.facebook.net/en_US/sdk.js";
       fjs.parentNode.insertBefore(js, fjs);
     }(document, 'script', 'facebook-jssdk'));
@@ -78,16 +84,14 @@
       FB.login(function (response) {
         if (response.authResponse) {
           const code = response.authResponse.code;
-          // The returned code must be transmitted to your backend, 
-          // which will perform a server-to-server call from there to our servers for an access token
+          // The returned code must be transmitted to your backend
         } else {
           console.log('User cancelled login or did not fully authorize.');
-          // Close the tab if user clicks cancel
         }
       }, {
-        config_id: configId, // configuration ID goes here
-        response_type: 'code', // must be set to 'code' for System User access token
-        override_default_response_type: true, // when true, any response types passed in the "response_type" will take precedence over the default type
+        config_id: configId, // Configuration ID
+        response_type: 'code', // Must be set to 'code' for System User access token
+        override_default_response_type: true, // When true, any response types passed in the "response_type" will take precedence over the default type
         extras: {
           feature: 'whatsapp_embedded_signup',
           sessionInfoVersion: 2, // Receive Session Logging Info
@@ -109,19 +113,19 @@
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'WA_EMBEDDED_SIGNUP') {
-          // if user finishes the Embedded Signup flow
+          // If user finishes the Embedded Signup flow
           if (data.event === 'FINISH') {
             const { phone_number_id, waba_id } = data.data;
             // Forward the data to the parent window
             window.parent.postMessage(data.data, '*');
             console.log("Phone number ID ", phone_number_id, " WhatsApp business account ID ", waba_id);
           }
-          // if user reports an error during the Embedded Signup flow
+          // If user reports an error during the Embedded Signup flow
           else if (data.event === 'ERROR') {
             const { error_message } = data.data;
-            console.error("error ", error_message);
+            console.error("Error: ", error_message);
           }
-          // if user cancels the Embedded Signup flow
+          // If user cancels the Embedded Signup flow
           else {
             const { current_step } = data.data;
             // Forward the data to the parent window
@@ -130,7 +134,6 @@
           }
         }
       } catch {
-        // Don't parse info that's not JSON
         console.log('Non JSON Response', event.data);
       }
     };
@@ -144,18 +147,20 @@
       let buttonHtml = '';
       if (addNumber) {
         buttonHtml = `
-          <button onclick="launchWhatsAppSignup()" class="button">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <button onclick="launchWhatsAppSignup()" class="add_number">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="16" height="16" fill="white" fill-opacity="0.01"/>
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M7.99961 1.59961C4.46499 1.59961 1.59961 4.46499 1.59961 7.99961C1.59961 11.5342 4.46499 14.3996 7.99961 14.3996C11.5342 14.3996 14.3996 11.5342 14.3996 7.99961C14.3996 6.30222 13.7253 4.67436 12.5251 3.47413C11.3249 2.27389 9.697 1.59961 7.99961 1.59961ZM7.9996 13.2796C5.08354 13.2796 2.7196 10.9157 2.7196 7.99961C2.7196 5.08354 5.08354 2.71961 7.9996 2.71961C10.9157 2.71961 13.2796 5.08354 13.2796 7.99961C13.2752 10.9138 10.9138 13.2752 7.9996 13.2796ZM10.6396 8.55961C10.9489 8.55961 11.1996 8.30889 11.1996 7.99961C11.1996 7.69033 10.9489 7.43961 10.6396 7.43961H8.55961V5.35961C8.55961 5.05033 8.30889 4.79961 7.99961 4.79961C7.69033 4.79961 7.43961 5.05033 7.43961 5.35961V7.43961H5.35961C5.05033 7.43961 4.79961 7.69033 4.79961 7.99961C4.79961 8.30889 5.05033 8.55961 5.35961 8.55961H7.43961V10.6396C7.43961 10.9489 7.69033 11.1996 7.99961 11.1996C8.30889 11.1996 8.55961 10.9489 8.55961 10.6396V8.55961H10.6396Z" fill="white"/>
             </svg>
             Add number
           </button>
         `;
       } else {
         buttonHtml = `
-          <button onclick="launchWhatsAppSignup()" class="button">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter">
-              <path d="M5 12h14m-7-7l7 7-7 7"/>
+          <button onclick="launchWhatsAppSignup()" class="start_setup">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="16" height="16" fill="white" fill-opacity="0.01"/>
+              <path d="M14.96 8.2203C15.02 8.0803 15.02 7.9203 14.96 7.7703C14.95 7.7403 14.93 7.7203 14.91 7.6903C14.89 7.6603 14.87 7.6203 14.85 7.5903L10.82 3.1903C10.6 2.9503 10.22 2.9303 9.97 3.1503C9.73 3.3703 9.71 3.7503 9.93 4.0003L13.04 7.4003H1.6C1.27 7.4003 1 7.6703 1 8.0003C1 8.3303 1.27 8.6003 1.6 8.6003H13.04L9.93 11.9903C9.71 12.2303 9.72 12.6103 9.97 12.8403C10.09 12.9503 10.23 13.0003 10.38 13.0003C10.54 13.0003 10.7 12.9303 10.82 12.8103L14.85 8.4103C14.85 8.4103 14.89 8.3403 14.91 8.3103C14.93 8.2803 14.95 8.2603 14.96 8.2303V8.2203Z" fill="white"/>
             </svg>
             Start setup
           </button>
